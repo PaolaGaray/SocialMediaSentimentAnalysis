@@ -1,0 +1,9 @@
+# Ignore virtual environment folders
+venv/
+sentiment_env/
+
+# Ignore Python cache and checkpoint files
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+
