@@ -156,7 +156,7 @@ dependencies:
   - zlib=1.2.13=h4b97444_1
   - zstd=1.5.5=hc035e20_2
   - pytorch      # PyTorch for model training
-  - transformers  # Hugging Face Transformers library
+  - transformers:4.44.2  # Hugging Face Transformers library
   - streamlit     # Streamlit for deploying the dashboard
   - scikit-learn  # For evaluation metrics (precision, recall, etc.)
   - numpy         # Useful for numerical computations
