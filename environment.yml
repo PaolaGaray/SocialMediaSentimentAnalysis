@@ -161,6 +161,8 @@ dependencies:
   - scikit-learn  # For evaluation metrics (precision, recall, etc.)
   - numpy         # Useful for numerical computations
   - tqdm          # For progress bars during training
+  - spacy  # spaCy NLP library
+  - streamlit  # For the dashboard
   - pip:
       - datasets  # Hugging Face datasets, optional for loading large datasets
 prefix: /opt/anaconda3/envs/sentiment_env
