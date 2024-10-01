@@ -12,34 +12,48 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
 import spacy
+import os
 
-# Ensure the SpaCy model is downloaded
-try:
-    # Try loading the model if it's already available
-    nlp = spacy.load('en_core_web_sm')
-except OSError:
-    # If not, download and load the model
-    spacy.cli.download("en_core_web_sm")
-    nlp = spacy.load("en_core_web_sm")
+# Ensure the SpaCy model is downloaded and loaded
+def load_spacy_model():
+    try:
+        # Try loading the model if it's already available
+        nlp = spacy.load('en_core_web_sm')
+    except OSError:
+        # If not, download and load the model
+        st.write("Downloading spaCy model. This may take a while.")
+        spacy.cli.download("en_core_web_sm")
+        nlp = spacy.load("en_core_web_sm")
+    return nlp
+
+# Initialize SpaCy NLP pipeline
+nlp = load_spacy_model()
 
 # Function to preprocess input text (tokenization, lemmatization, etc.)
 def preprocess_text(text):
     doc = nlp(text)
     return ' '.join([token.lemma_ for token in doc if not token.is_stop and not token.is_punct])
 
-# Load your trained model and vectorizer
-with open('../models/logistic_regression_model.pkl', 'rb') as model_file:
-    model = pickle.load(model_file)
+# Helper function to load pickled files
+def load_pickle_file(file_path, description):
+    try:
+        with open(file_path, 'rb') as file:
+            return pickle.load(file)
+    except FileNotFoundError:
+        st.error(f"Error: {description} file not found. Please ensure the file exists at {file_path}.")
+        return None
 
-with open('../vectorizers/tfidf_vectorizer.pkl', 'rb') as vectorizer_file:
-    tfidf = pickle.load(vectorizer_file)
+# Load the trained model and vectorizer
+model = load_pickle_file('../models/logistic_regression_model.pkl', 'Trained model')
+tfidf = load_pickle_file('../vectorizers/tfidf_vectorizer.pkl', 'TF-IDF vectorizer')
 
 # Load y_test and y_pred
-with open('../data/clean/y_test.pkl', 'rb') as f:
-    y_test = pickle.load(f)
+y_test = load_pickle_file('../data/clean/y_test.pkl', 'Test dataset (y_test)')
+y_pred = load_pickle_file('../data/clean/y_pred.pkl', 'Predictions dataset (y_pred)')
 
-with open('../data/clean/y_pred.pkl', 'rb') as f:
-    y_pred = pickle.load(f)
+# Ensure everything loaded successfully
+if not all([model, tfidf, y_test, y_pred]):
+    st.stop()  # Stop the app if any critical file is missing
 
 # Sidebar for navigation
 option = st.sidebar.selectbox(
@@ -71,21 +85,24 @@ elif option == "Model Performance":
 
     # Confusion Matrix
     st.subheader("Confusion Matrix")
-    cm = confusion_matrix(y_test, y_pred)
-    fig, ax = plt.subplots()
-    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', ax=ax)
-    ax.set_xlabel('Predicted')
-    ax.set_ylabel('Actual')
-    st.pyplot(fig)
+    if y_test is not None and y_pred is not None:
+        cm = confusion_matrix(y_test, y_pred)
+        fig, ax = plt.subplots()
+        sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', ax=ax)
+        ax.set_xlabel('Predicted')
+        ax.set_ylabel('Actual')
+        st.pyplot(fig)
 
-    # Classification Report
-    st.subheader("Classification Report")
-    report = classification_report(y_test, y_pred, target_names=['Negative', 'Neutral', 'Positive'], output_dict=True)
-    st.write("**Accuracy:**", report['accuracy'])
-    st.write("**Precision:**", report['macro avg']['precision'])
-    st.write("**Recall:**", report['macro avg']['recall'])
-    st.write("**F1-Score:**", report['macro avg']['f1-score'])
+        # Classification Report
+        st.subheader("Classification Report")
+        report = classification_report(y_test, y_pred, target_names=['Negative', 'Neutral', 'Positive'], output_dict=True)
+        st.write("**Accuracy:**", report['accuracy'])
+        st.write("**Precision:**", report['macro avg']['precision'])
+        st.write("**Recall:**", report['macro avg']['recall'])
+        st.write("**F1-Score:**", report['macro avg']['f1-score'])
 
-    # Additional Metric (Optional): Displaying Accuracy Score
-    accuracy = accuracy_score(y_test, y_pred)
-    st.write(f"**Model Accuracy:** {accuracy:.2f}")
+        # Additional Metric (Optional): Displaying Accuracy Score
+        accuracy = accuracy_score(y_test, y_pred)
+        st.write(f"**Model Accuracy:** {accuracy:.2f}")
+    else:
+        st.write("Confusion matrix or classification report cannot be generated due to missing data.")

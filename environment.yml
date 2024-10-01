@@ -65,11 +65,11 @@ dependencies:
   - spacy  # spaCy NLP library
   - pytorch  # PyTorch for model training
 
-  # Explicitly list pip as a Conda dependency
+  # Asegúrate de que pip está instalado correctamente antes de usarlo
   - pip
 
-  # Use pip for packages that are not available through Conda or need specific versions
+  # Instalar con pip las bibliotecas que no están en conda o necesitan versiones específicas
   - pip:
       - transformers==4.44.2
-      - datasets  # Hugging Face datasets, optional for loading large datasets
-      - streamlit  # Streamlit for deploying the dashboard
+      - datasets  # Hugging Face datasets
+      - streamlit  # Streamlit para desplegar el dashboard
