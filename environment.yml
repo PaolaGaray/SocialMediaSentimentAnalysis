@@ -38,7 +38,7 @@ dependencies:
   - nbconvert=7.10.0
   - nbformat=5.9.2
   - nltk=3.9.1
-  - numpy=1.26.4
+  - numpy=1.26.4  # Limitar a NumPy versión menor a 2.0
   - openjpeg=2.5.2
   - pandas=2.2.2
   - pillow=10.4.0
