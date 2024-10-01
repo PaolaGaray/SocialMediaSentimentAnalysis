@@ -6,7 +6,6 @@ channels:
 dependencies:
   - python=3.11
   - anyio=4.2.0
-  - appnope=0.1.2
   - argon2-cffi=21.3.0
   - attrs=23.1.0
   - babel=2.11.0
@@ -30,7 +29,6 @@ dependencies:
   - jupyterlab=4.2.5
   - kiwisolver=1.4.4
   - lcms2=2.12
-  - libbrotli=1.0.9
   - libpng=1.6.39
   - lz4-c=1.9.4
   - markupsafe=2.1.3
@@ -64,13 +62,15 @@ dependencies:
   - zeromq=4.3.5
   - zlib=1.2.13
   - zstd=1.5.5
-  - pytorch     # PyTorch for model training
-  - spacy       # spaCy NLP library
+  - spacy
+  - pytorch  # PyTorch for model training
 
-  # pip packages for handling specific PyPI versions
+  # Explicitly list pip as a Conda dependency
+  - pip
+
+  # Use pip for packages that are not available through Conda or need specific versions
   - pip:
+      - transformers==4.44.2
       - datasets  # Hugging Face datasets, optional for loading large datasets
-      - transformers==4.44.2  # Hugging Face Transformers library, installed via pip
       - streamlit  # Streamlit for deploying the dashboard
       - en-core-web-sm==3.5.0  # spaCy model
-
