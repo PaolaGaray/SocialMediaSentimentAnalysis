@@ -13,8 +13,14 @@ import seaborn as sns
 from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
 import spacy
 
-# Load spaCy's small English model for tokenization and lemmatization
-nlp = spacy.load('en_core_web_sm')
+# Ensure the SpaCy model is downloaded
+try:
+    # Try loading the model if it's already available
+    nlp = spacy.load('en_core_web_sm')
+except OSError:
+    # If not, download and load the model
+    spacy.cli.download("en_core_web_sm")
+    nlp = spacy.load("en_core_web_sm")
 
 # Function to preprocess input text (tokenization, lemmatization, etc.)
 def preprocess_text(text):
@@ -83,4 +89,3 @@ elif option == "Model Performance":
     # Additional Metric (Optional): Displaying Accuracy Score
     accuracy = accuracy_score(y_test, y_pred)
     st.write(f"**Model Accuracy:** {accuracy:.2f}")
-

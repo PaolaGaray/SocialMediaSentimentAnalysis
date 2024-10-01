@@ -62,7 +62,7 @@ dependencies:
   - zeromq=4.3.5
   - zlib=1.2.13
   - zstd=1.5.5
-  - spacy
+  - spacy  # spaCy NLP library
   - pytorch  # PyTorch for model training
 
   # Explicitly list pip as a Conda dependency
@@ -73,4 +73,3 @@ dependencies:
       - transformers==4.44.2
       - datasets  # Hugging Face datasets, optional for loading large datasets
       - streamlit  # Streamlit for deploying the dashboard
-      - en-core-web-sm==3.5.0  # spaCy model
