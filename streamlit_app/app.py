@@ -11,8 +11,10 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+import matplotlib.image as mpimg  # <-- Importing the image module
 from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
 import spacy
+from matplotlib.offsetbox import OffsetImage, AnnotationBbox
 
 # Load the spaCy model for text processing
 nlp = spacy.load('en_core_web_sm')
@@ -57,8 +59,22 @@ if option == "Sentiment Analysis":
             predicted_sentiment = sentiment_label[prediction]
             
             st.write(f"**Predicted Sentiment:** {predicted_sentiment}")
+            
+            # Load the corresponding icons based on the predicted sentiment
+            if predicted_sentiment == 'Positive':
+                icon_img = './assets/promoter.png'
+            elif predicted_sentiment == 'Neutral':
+                icon_img = './assets/passive.png'
+            else:
+                icon_img = './assets/detractor.png'
+            
+            # Display the corresponding sentiment icon
+            st.image(icon_img, width=50)  # Adjust the width of the icon as necessary
         else:
             st.write("Please enter some text for analysis.")
+
+
+
 
 # Upload CSV for Sentiment Analysis Section
 elif option == "Upload CSV for Sentiment Analysis":
@@ -91,17 +107,70 @@ elif option == "Upload CSV for Sentiment Analysis":
             # Count the number of each sentiment for visualization
             sentiment_counts = df['sentiment_label'].value_counts()
 
-            # Display sentiment counts in a bar chart
+            # ---- Overall Sentiment Overview (Primer) ----
+            # Mapping sentiment labels to Promoters, Passives, and Detractors
+            sentiment_label_map = {
+                'Positive': 'Promoters',
+                'Neutral': 'Passives',
+                'Negative': 'Detractors'
+            }
+
+            # Replace sentiment labels with Promoters, Passives, and Detractors
+            df['group_label'] = df['sentiment_label'].map(sentiment_label_map)
+
+            # Count the number of each group
+            group_counts = df['group_label'].value_counts()
+
+            # Calculate percentages for each group
+            group_percentages = [
+                (group_counts.get('Promoters', 0) / group_counts.sum()) * 100,
+                (group_counts.get('Passives', 0) / group_counts.sum()) * 100,
+                (group_counts.get('Detractors', 0) / group_counts.sum()) * 100
+            ]
+
+            # Create the horizontal bar chart for the Promoters/Passives/Detractors
+            categories = ['Promoters', 'Passives', 'Detractors']
+            colors = ['green', 'orange', 'red']
+            fig, ax = plt.subplots(figsize=(8, 5))
+
+            # Plot the horizontal bar chart
+            bars = ax.barh(categories, group_percentages, color=colors)
+
+            # Add percentage labels on the bars
+            for i, (bar, percentage) in enumerate(zip(bars, group_percentages)):
+                ax.text(bar.get_width() + 1, bar.get_y() + bar.get_height()/2, f'{percentage:.2f}%', va='center', fontweight='bold')
+
+            # Add the total responses label at the top
+            total_responses = group_counts.sum()
+            ax.text(0.5, 1.05, f'{total_responses} responses', ha='center', va='center', transform=ax.transAxes, fontsize=12, bbox=dict(facecolor='orange', edgecolor='none', boxstyle='round,pad=0.5'))
+
+            # Customize labels and title
+            st.subheader("Overall Sentiment Overview")
+            ax.set_xlabel('Percentage (%)')
+            #ax.set_title('Overall Sentiment Overview')
+
+            # Show the horizontal bar plot
+            st.pyplot(fig)
+
+            # ---- Predicted Sentiments for Uploaded Data (Segundo) ----
+            st.subheader("Predicted Sentiments for Uploaded Data")
+            st.write(df[['text', 'sentiment_label']])
+
+            # ---- Sentiment Distribution (Último con gráfico más pequeño) ----
             st.subheader("Sentiment Distribution")
-            fig, ax = plt.subplots()
-            sns.barplot(x=sentiment_counts.index, y=sentiment_counts.values, palette="Blues_d", ax=ax)
+            fig, ax = plt.subplots(figsize=(5, 3))  # Reduced figure size
+
+            # Define custom colors for each sentiment
+            colors = ['red' if label == 'Negative' else 'orange' if label == 'Neutral' else 'green' for label in sentiment_counts.index]
+
+            sns.barplot(x=sentiment_counts.index, y=sentiment_counts.values, palette=colors, ax=ax)
             ax.set_xlabel('Sentiment')
             ax.set_ylabel('Count')
             st.pyplot(fig)
 
-            # Show the DataFrame with predictions (optional)
-            st.subheader("Predicted Sentiments for Uploaded Data")
-            st.write(df[['text', 'sentiment_label']])
+
+
+
 
 # Model Performance Section
 elif option == "Model Performance":
