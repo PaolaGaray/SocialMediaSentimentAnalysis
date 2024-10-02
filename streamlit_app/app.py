@@ -8,71 +8,51 @@
 
 import pickle
 import streamlit as st
+import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
 import spacy
-import os
 
-# Ensure the SpaCy model is downloaded and loaded
-def load_spacy_model():
-    try:
-        # Try loading the model if it's already available
-        nlp = spacy.load('en_core_web_sm')
-    except OSError:
-        # If not, download and load the model
-        st.write("Downloading spaCy model. This may take a while.")
-        spacy.cli.download("en_core_web_sm")
-        nlp = spacy.load("en_core_web_sm")
-    return nlp
+# Load the spaCy model for text processing
+nlp = spacy.load('en_core_web_sm')
 
-# Initialize SpaCy NLP pipeline
-nlp = load_spacy_model()
-
-# Function to preprocess input text (tokenization, lemmatization, etc.)
+# Preprocess function to clean text
 def preprocess_text(text):
     doc = nlp(text)
     return ' '.join([token.lemma_ for token in doc if not token.is_stop and not token.is_punct])
 
-# Helper function to load pickled files
-def load_pickle_file(file_path, description):
-    try:
-        with open(file_path, 'rb') as file:
-            return pickle.load(file)
-    except FileNotFoundError:
-        st.error(f"Error: {description} file not found. Please ensure the file exists at {file_path}.")
-        return None
-
 # Load the trained model and vectorizer
-model = load_pickle_file('../models/logistic_regression_model.pkl', 'Trained model')
-tfidf = load_pickle_file('../vectorizers/tfidf_vectorizer.pkl', 'TF-IDF vectorizer')
+with open('../models/logistic_regression_model.pkl', 'rb') as model_file:
+    model = pickle.load(model_file)
 
-# Load y_test and y_pred
-y_test = load_pickle_file('../data/clean/y_test.pkl', 'Test dataset (y_test)')
-y_pred = load_pickle_file('../data/clean/y_pred.pkl', 'Predictions dataset (y_pred)')
+with open('../vectorizers/tfidf_vectorizer.pkl', 'rb') as vectorizer_file:
+    tfidf = pickle.load(vectorizer_file)
 
-# Ensure everything loaded successfully
-if not all([model, tfidf, y_test, y_pred]):
-    st.stop()  # Stop the app if any critical file is missing
+# Load y_test and y_pred for performance analysis
+with open('../data/clean/y_test.pkl', 'rb') as f:
+    y_test = pickle.load(f)
+
+with open('../data/clean/y_pred.pkl', 'rb') as f:
+    y_pred = pickle.load(f)
 
 # Sidebar for navigation
-option = st.sidebar.selectbox(
-    "Choose what you want to do:",
-    ("Sentiment Analysis", "Model Performance")
+option = st.sidebar.radio(
+    "Choose an action:",
+    ("Sentiment Analysis", "Upload CSV for Sentiment Analysis", "Model Performance")
 )
 
+# Sentiment Analysis Section
 if option == "Sentiment Analysis":
     st.title("Sentiment Analysis App")
     user_input = st.text_area("Enter a sentence or paragraph for sentiment analysis:")
     
     if st.button("Analyze"):
         if user_input:
-            # Preprocess the user input text
             cleaned_input = preprocess_text(user_input)
             input_vector = tfidf.transform([cleaned_input])
             prediction = model.predict(input_vector)[0]
             
-            # Map prediction to sentiment label
             sentiment_label = {0: 'Negative', 1: 'Neutral', 2: 'Positive'}
             predicted_sentiment = sentiment_label[prediction]
             
@@ -80,29 +60,70 @@ if option == "Sentiment Analysis":
         else:
             st.write("Please enter some text for analysis.")
 
+# Upload CSV for Sentiment Analysis Section
+elif option == "Upload CSV for Sentiment Analysis":
+    st.title("Upload CSV for Sentiment Analysis")
+
+    # File uploader for CSV files
+    uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
+
+    if uploaded_file is not None:
+        # Load the uploaded CSV file into a pandas DataFrame
+        df = pd.read_csv(uploaded_file)
+
+        # Ensure the file has a 'text' column
+        if 'text' not in df.columns:
+            st.error("The CSV file must contain a column named 'text'.")
+        else:
+            # Preprocess the text column
+            df['cleaned_text'] = df['text'].apply(preprocess_text)
+
+            # Transform the cleaned text into TF-IDF vectors
+            tfidf_vectors = tfidf.transform(df['cleaned_text'])
+
+            # Predict the sentiment of each text using the model
+            df['predicted_sentiment'] = model.predict(tfidf_vectors)
+
+            # Map numeric predictions to sentiment labels
+            sentiment_label = {0: 'Negative', 1: 'Neutral', 2: 'Positive'}
+            df['sentiment_label'] = df['predicted_sentiment'].map(sentiment_label)
+
+            # Count the number of each sentiment for visualization
+            sentiment_counts = df['sentiment_label'].value_counts()
+
+            # Display sentiment counts in a bar chart
+            st.subheader("Sentiment Distribution")
+            fig, ax = plt.subplots()
+            sns.barplot(x=sentiment_counts.index, y=sentiment_counts.values, palette="Blues_d", ax=ax)
+            ax.set_xlabel('Sentiment')
+            ax.set_ylabel('Count')
+            st.pyplot(fig)
+
+            # Show the DataFrame with predictions (optional)
+            st.subheader("Predicted Sentiments for Uploaded Data")
+            st.write(df[['text', 'sentiment_label']])
+
+# Model Performance Section
 elif option == "Model Performance":
     st.title("Model Performance Metrics")
 
     # Confusion Matrix
     st.subheader("Confusion Matrix")
-    if y_test is not None and y_pred is not None:
-        cm = confusion_matrix(y_test, y_pred)
-        fig, ax = plt.subplots()
-        sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', ax=ax)
-        ax.set_xlabel('Predicted')
-        ax.set_ylabel('Actual')
-        st.pyplot(fig)
+    cm = confusion_matrix(y_test, y_pred)
+    fig, ax = plt.subplots()
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', ax=ax)
+    ax.set_xlabel('Predicted')
+    ax.set_ylabel('Actual')
+    st.pyplot(fig)
 
-        # Classification Report
-        st.subheader("Classification Report")
-        report = classification_report(y_test, y_pred, target_names=['Negative', 'Neutral', 'Positive'], output_dict=True)
-        st.write("**Accuracy:**", report['accuracy'])
-        st.write("**Precision:**", report['macro avg']['precision'])
-        st.write("**Recall:**", report['macro avg']['recall'])
-        st.write("**F1-Score:**", report['macro avg']['f1-score'])
+    # Classification Report
+    st.subheader("Classification Report")
+    report = classification_report(y_test, y_pred, target_names=['Negative', 'Neutral', 'Positive'], output_dict=True)
+    st.write("**Accuracy:**", report['accuracy'])
+    st.write("**Precision:**", report['macro avg']['precision'])
+    st.write("**Recall:**", report['macro avg']['recall'])
+    st.write("**F1-Score:**", report['macro avg']['f1-score'])
 
-        # Additional Metric (Optional): Displaying Accuracy Score
-        accuracy = accuracy_score(y_test, y_pred)
-        st.write(f"**Model Accuracy:** {accuracy:.2f}")
-    else:
-        st.write("Confusion matrix or classification report cannot be generated due to missing data.")
+    # Additional Metric (Optional): Displaying Accuracy Score
+    accuracy = accuracy_score(y_test, y_pred)
+    st.write(f"**Model Accuracy:** {accuracy:.2f}")

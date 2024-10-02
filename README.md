@@ -91,11 +91,12 @@ The full dataset contains more than 40,000 rows, offering a substantial amount o
 
 ---
 
-## Usage
+<!-- ## Usage
 
 ### Running the App Locally
 
 1. **Clone the Repository**:
    ```bash
-   git clone https://github.com/YourUsername/Sentiment-Analysis-App.git
+   git clone https://github.com/PaolaGaray/SocialMediaSentimentAnalysis
    cd Sentiment-Analysis-App
+   ``` -->
