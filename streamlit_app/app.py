@@ -39,10 +39,12 @@ with open('../data/clean/y_pred.pkl', 'rb') as f:
     y_pred = pickle.load(f)
 
 # Sidebar for navigation
+
 option = st.sidebar.radio(
     "Choose an action:",
-    ("Sentiment Analysis", "Upload CSV for Sentiment Analysis", "Model Performance")
+    ("Sentiment Analysis", "Mass Sentiment Analysis", "Sentiment Timeline", "Model Performance")
 )
+
 
 # Sentiment Analysis Section
 if option == "Sentiment Analysis":
@@ -77,8 +79,8 @@ if option == "Sentiment Analysis":
 
 
 # Upload CSV for Sentiment Analysis Section
-elif option == "Upload CSV for Sentiment Analysis":
-    st.title("Upload CSV for Sentiment Analysis")
+elif option == "Mass Sentiment Analysis":
+    st.title("Mass Sentiment Analysis")
 
     # File uploader for CSV files
     uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
@@ -168,6 +170,76 @@ elif option == "Upload CSV for Sentiment Analysis":
             ax.set_ylabel('Count')
             st.pyplot(fig)
 
+
+
+
+# Upload CSV for Sentiment Timeline Section
+elif option == "Sentiment Timeline":
+    st.title("Upload CSV for Sentiment Timeline Analysis")
+
+    # File uploader for CSV files
+    uploaded_file_timeline = st.file_uploader("Choose a CSV file with text and date (year, month, day)", type="csv")
+
+    if uploaded_file_timeline is not None:
+        # Load the uploaded CSV file into a pandas DataFrame
+        df_timeline = pd.read_csv(uploaded_file_timeline)
+
+        # Ensure the file has 'text', 'year', 'month', and 'day' columns
+        required_columns = ['text', 'year', 'month', 'day']
+        if not all(col in df_timeline.columns for col in required_columns):
+            st.error(f"The CSV file must contain the following columns: {', '.join(required_columns)}.")
+        else:
+            # Preprocess the text column
+            df_timeline['cleaned_text'] = df_timeline['text'].apply(preprocess_text)
+
+            # Transform the cleaned text into TF-IDF vectors
+            tfidf_vectors_timeline = tfidf.transform(df_timeline['cleaned_text'])
+
+            # Predict the sentiment of each text using the model
+            df_timeline['predicted_sentiment'] = model.predict(tfidf_vectors_timeline)
+
+            # Map numeric predictions to sentiment labels
+            sentiment_label_timeline = {0: 'Negative', 1: 'Neutral', 2: 'Positive'}
+            df_timeline['sentiment_label'] = df_timeline['predicted_sentiment'].map(sentiment_label_timeline)
+
+            # Create a 'date' column using only year and month for easier plotting
+            df_timeline['date'] = pd.to_datetime(df_timeline[['year', 'month']].assign(day=1))
+
+            # Group the data by year-month and count sentiment labels
+            sentiment_counts_timeline = df_timeline.groupby(['date', 'sentiment_label']).size().unstack(fill_value=0)
+
+            # Calculate average sentiment score for each month
+            sentiment_score_mapping = {'Negative': 0, 'Neutral': 1, 'Positive': 2}
+            df_timeline['sentiment_score'] = df_timeline['sentiment_label'].map(sentiment_score_mapping)
+            avg_sentiment_score = df_timeline.groupby('date')['sentiment_score'].mean()
+
+            # Plot the sentiment timeline
+            st.subheader("Sentiment Timeline")
+
+            fig, ax1 = plt.subplots(figsize=(10, 6))
+
+            # Stacked bar plot for sentiment counts per month
+            sentiment_counts_timeline.plot(kind='bar', stacked=True, ax=ax1, color=['red', 'orange', 'green'])
+            ax1.set_ylabel("Number of Comments")
+            ax1.set_xlabel("Date (Year-Month)")
+            ax1.set_title("Sentiment Timeline (Monthly)")
+            ax1.legend(title="Sentiment", loc='upper left')
+
+            # Line plot for average sentiment score per month
+            ax2 = ax1.twinx()
+            ax2.plot(avg_sentiment_score.index, avg_sentiment_score.values, color='blue', marker='o', linestyle='-', label="Average Sentiment Score")
+            ax2.set_ylabel("Average Sentiment Score")
+            ax2.set_ylim(0, 2)
+            ax2.legend(loc='upper right')
+
+            # Change the X-axis to show both year and month
+            ax1.set_xticklabels([date.strftime('%Y-%m') for date in avg_sentiment_score.index], rotation=45)
+
+            st.pyplot(fig)
+
+            # Show the DataFrame with predictions (optional)
+            st.subheader("Predicted Sentiments for Uploaded Data")
+            st.write(df_timeline[['text', 'year', 'month', 'day', 'sentiment_label']])
 
 
 
