@@ -52,7 +52,7 @@ Sentiment analysis is a powerful tool for businesses across multiple industries.
 
 ### Technology Stack
 
-- **Programming Language**: Python 3.8+
+- **Programming Language**: Python
 - **Libraries**:
   - **spaCy**: For text preprocessing (tokenization, lemmatization, and stopword removal)
   - **scikit-learn**: For machine learning (TF-IDF vectorization, Logistic Regression model)
