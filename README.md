@@ -1,4 +1,4 @@
-# Sentiment Analysis App
+# Social Media Sentiment Analysis
 
 ## Project Overview
 
