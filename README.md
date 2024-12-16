@@ -4,7 +4,7 @@
 
 The **Social Media Sentiment Analysis** is a machine learning-based tool designed to classify text data into three categories: **positive**, **neutral**, and **negative** sentiment. This project combines Natural Language Processing (NLP) techniques with machine learning algorithms to analyze and understand the sentiments conveyed in text data. It is built using Python, spaCy, scikit-learn, and Streamlit for a highly interactive and visually appealing web application.
 
-The primary objective of this project is to offer a scalable solution for businesses that need to analyze customer feedback, social media data, reviews, and survey responses. By understanding customer sentiments, companies can better tailor their strategies, make data-driven decisions, and improve overall customer experience.
+The primary goal of this project is to offer a scalable solution for businesses that need to analyze customer feedback, social media data, reviews, and survey responses. By understanding customer sentiments, companies can better tailor their strategies, make data-driven decisions, and improve overall customer experience.
 
 ---
 
